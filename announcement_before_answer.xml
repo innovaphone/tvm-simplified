@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<voicemail xmlns="http://www.innovaphone.com/xsd/voicemail6.xsd" _ver="--VER--">
+  <!-- text vor melden -->
+
+  <!-- this function is called when the voicemail object instantiates -->
+  <function define="Main">
+
+    <!-- prepare for receipt fo overlapped dialled digits -->
+    <assign out="digitsdone" value="false"/>
+
+    <!-- terminate main loop as soon as inter-digit timer has elapsed -->
+    <event type="timer" name="guard">
+      <assign out="digitsdone" value="true"/>
+      <pbx-getcallinfo out-cgpn="$cgpn" out-cdpn="$cdpn" out-leg2="$leg2" />
+      <dbg string="### timer-expired: " string2="$cdpn"/>
+    </event>
+
+    <!-- catch call-info events (overlapped dialling) -->
+    <event type="call-info" block="false">
+      <dbg string="### call-info"/>
+      <!-- reset inter-digit timer -->
+      <timer name="guard" sec="0"/>
+      <timer name="guard" sec="4"/>
+
+    </event>
+
+    <!-- setup inter-digit timer -->
+    <timer name="guard" sec="4"/>
+
+    <!-- wait for inter-digit timer to expire -->
+    <while notcond="$digitsdone">
+      <wait sec="1"/>
+      <dbg string="### wait"/>
+    </while>
+
+    <dbg string="### final called-party: " string2="$cdpn"/>
+
+    <!-- get announcement -->
+    <store-get root="" name="en_you_will_be_connected.g711a" out-url="$url"/>
+    <!-- play announcement -->
+    <pbx-prompt url="$url" barge-in="false"/>
+
+    <!-- transfer to final destination -->
+    <pbx-xfer e164="$cdpn" out-cause="$cause" />
+
+  </function>
+
+</voicemail>
+
+<!-- Text vor Melden (vereinfacht) wiki-src/xml/tvm-simplified 1,0,0,0 (C) innovaphone AG 2010-2014 -->
